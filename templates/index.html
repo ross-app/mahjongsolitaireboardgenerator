@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mahjong Solitaire Board Generator - Physical Tiles</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 40px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    a.button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background: #2d6cdf;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+
+    a.button:hover {
+      background: #1f56b8;
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+
+    .contact {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .contact h2 {
+      font-size: 1.1rem;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    .contact a {
+      color: #2d6cdf;
+      text-decoration: none;
+    }
+
+    .contact a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <h1>Mahjong Solitaire Board Generator - Physical Tiles</h1>
+
+    <p>
+      This tool generates a <b>solvable Mahjong Solitaire board layout</b> designed for physical tiles.
+    </p>
+
+    <p>
+      The board is built using a <b>turtle layout system</b>, where each layer is stacked on top of the previous one.
+      The first layer is always the bottom layer, and higher layers are placed above it.
+    </p>
+
+    <p>
+      This ensures that when you physically build and play the game, the board remains <b>fully solvable</b>.
+    </p>
+
+    <p>
+      Click below to generate and view your board.
+    </p>
+
+    <p style="color: #c0392b; font-weight: bold;">
+      ⚠️ Do not use the browser's back button — it will generate a new board layout.
+    </p>
+
+    <a class="button" href="{{ url_for('result') }}">Go to result</a>
+
+    <div class="contact">
+      <h2>Contact</h2>
+      <p>Have a question or feedback? Feel free to reach out: <a href="mailto:mahjongsolitaireboard@gmail.com">mahjongsolitaireboard@gmail.com</a></p>
+    </div>
+
+  </div>
+</body>
+</html>
