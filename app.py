@@ -387,6 +387,18 @@ def place_tiles_pairwise(save_intermediates=False, intermediate_folder=None):
 def home():
     return render_template("index.html")
 
+@app.route("/board")
+def board():
+    session_id = request.args.get("session_id", "")
+    if not session_id or not re.fullmatch(r"[0-9a-f\-]{36}", session_id):
+        return render_template("index.html")
+    folder = os.path.join(EXPORT_FOLDER, session_id)
+    if not os.path.isdir(folder):
+        return render_template("index.html")
+    return render_template("result.html",
+                           image=f"generated/{session_id}/board.png",
+                           session_id=session_id)
+
 @app.route("/result")
 def result():
     import uuid

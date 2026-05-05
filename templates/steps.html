@@ -147,7 +147,7 @@
 
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
-      <a class="button" href="{{ url_for('result') }}">&#8592; Back to board</a>
+      <a class="button" href="{{ url_for('board', session_id=session_id) }}">&#8592; Back to board</a>
 
       <div style="display: flex; align-items: center; gap: 10px;">
         <label for="jumpInput" style="font-size: 0.95rem; color: #555;">Jump to step:</label>
@@ -196,9 +196,14 @@
         window.location.href = "{{ url_for('home') }}";
       }
 
-      // Best-effort cleanup when tab is closed or navigated away
+      // Best-effort cleanup when tab is closed or navigated away (but not back to board)
       window.addEventListener("pagehide", function(e) {
-        deleteSession();
+        if (!_navigatingToBoard) deleteSession();
+      });
+
+      var _navigatingToBoard = false;
+      document.querySelector('a[href*="/board"]').addEventListener("click", function() {
+        _navigatingToBoard = true;
       });
     </script>
 
