@@ -131,7 +131,7 @@
 
     <div class="step-nav">
       {% if step > 1 %}
-        <a class="nav-btn" href="{{ url_for('steps', step=step-1) }}">&#8592;</a>
+        <a class="nav-btn" href="{{ url_for('steps', session_id=session_id, step=step-1) }}">&#8592;</a>
       {% else %}
         <span class="nav-btn disabled">&#8592;</span>
       {% endif %}
@@ -139,7 +139,7 @@
       <span class="step-counter">Step {{ step }} of {{ total }}</span>
 
       {% if step < total %}
-        <a class="nav-btn" href="{{ url_for('steps', step=step+1) }}">&#8594;</a>
+        <a class="nav-btn" href="{{ url_for('steps', session_id=session_id, step=step+1) }}">&#8594;</a>
       {% else %}
         <span class="nav-btn disabled">&#8594;</span>
       {% endif %}
@@ -163,13 +163,44 @@
           onclick="
             var v = parseInt(document.getElementById('jumpInput').value);
             if (v >= 1 && v <= {{ total }}) {
-              window.location.href = '{{ url_for('steps', step=1) }}'.replace('/1', '/' + v);
+              window.location.href = '{{ url_for('steps', session_id=session_id, step=1) }}'.replace('step=1', 'step=' + v);
             }
           "
           style="padding: 10px 16px; background: #2d6cdf; color: white; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer; margin-top: 20px;"
         >Go</button>
       </div>
+
+      <button
+        onclick="deleteSessionAndGo()"
+        style="padding: 10px 16px; background: #c0392b; color: white; border: none; border-radius: 8px; font-size: 0.95rem; cursor: pointer;"
+        title="Delete your generated board files and return to home"
+      >&#10003; Done — clean up</button>
     </div>
+
+    <script>
+      const SESSION_ID = "{{ session_id }}";
+
+      function deleteSession() {
+        return navigator.sendBeacon
+          ? navigator.sendBeacon("/delete_session", JSON.stringify({ session_id: SESSION_ID }))
+          : fetch("/delete_session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ session_id: SESSION_ID }),
+              keepalive: true
+            });
+      }
+
+      function deleteSessionAndGo() {
+        deleteSession();
+        window.location.href = "{{ url_for('home') }}";
+      }
+
+      // Best-effort cleanup when tab is closed or navigated away
+      window.addEventListener("pagehide", function(e) {
+        deleteSession();
+      });
+    </script>
 
     <div class="contact">
       <h2>Contact</h2>

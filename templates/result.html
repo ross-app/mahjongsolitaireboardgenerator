@@ -96,7 +96,7 @@
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
       <a class="button" href="{{ url_for('home') }}">Go back</a>
-      <a class="button" href="{{ url_for('steps') }}" style="background: #28a745;">See solution steps</a>
+      <a class="button" href="{{ url_for('steps', session_id=session_id) }}" style="background: #28a745;">See solution steps</a>
     </div>
 
     <div class="contact">

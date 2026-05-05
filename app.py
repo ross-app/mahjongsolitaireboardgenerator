@@ -1,6 +1,8 @@
-from flask import Flask, render_template, Response, request
+from flask import Flask, render_template, Response, request, jsonify
 import random
 import re
+import shutil
+import time
 from collections import defaultdict
 from PIL import Image, ImageDraw
 import os
@@ -8,6 +10,28 @@ import threading
 
 app = Flask(__name__)
 generation_lock = threading.Lock()
+
+# -----------------------------
+# Background cleanup (folders older than 1 hour)
+# -----------------------------
+SESSION_MAX_AGE_SECONDS = 18000  # 5 hours
+
+def _cleanup_old_sessions():
+    while True:
+        time.sleep(600)  # run every 10 minutes
+        try:
+            now = time.time()
+            for name in os.listdir(EXPORT_FOLDER):
+                folder = os.path.join(EXPORT_FOLDER, name)
+                if os.path.isdir(folder):
+                    age = now - os.path.getmtime(folder)
+                    if age > SESSION_MAX_AGE_SECONDS:
+                        shutil.rmtree(folder, ignore_errors=True)
+        except Exception:
+            pass
+
+_cleanup_thread = threading.Thread(target=_cleanup_old_sessions, daemon=True)
+_cleanup_thread.start()
 
 # -----------------------------
 # Parameters
@@ -365,25 +389,38 @@ def home():
 
 @app.route("/result")
 def result():
+    import uuid
+    session_id = str(uuid.uuid4())
+    session_folder = os.path.join(EXPORT_FOLDER, session_id)
+    os.makedirs(session_folder, exist_ok=True)
+
     acquired = generation_lock.acquire(blocking=False)
     if not acquired:
         return render_template("busy.html"), 503
 
     try:
-        place_tiles_pairwise(save_intermediates=True, intermediate_folder=EXPORT_FOLDER)
-        visualize_grid(grid, save_path=EXPORT_FILE)
+        place_tiles_pairwise(save_intermediates=True, intermediate_folder=session_folder)
+        export_file = os.path.join(session_folder, "board.png")
+        visualize_grid(grid, save_path=export_file)
     finally:
         generation_lock.release()
 
-    return render_template("result.html", image="generated/board.png")
+    return render_template("result.html",
+                           image=f"generated/{session_id}/board.png",
+                           session_id=session_id)
 
 @app.route("/steps")
 def steps():
-    if not os.path.isdir(EXPORT_FOLDER):
-        return "No steps found. Please generate a board first.", 404
+    session_id = request.args.get("session_id", "")
+    if not session_id:
+        return "Missing session ID. Please generate a board first.", 400
+
+    session_folder = os.path.join(EXPORT_FOLDER, session_id)
+    if not os.path.isdir(session_folder):
+        return "Session not found. Please generate a new board.", 404
 
     step_files = sorted(
-        [f for f in os.listdir(EXPORT_FOLDER) if f.startswith("board-") and f.endswith(".png")],
+        [f for f in os.listdir(session_folder) if f.startswith("board-") and f.endswith(".png")],
         key=lambda f: int(f.replace("board-", "").replace(".png", ""))
     )
     total = len(step_files)
@@ -393,10 +430,13 @@ def steps():
     requested = request.args.get("step", 1, type=int)
     requested = max(1, min(requested, total))
 
-    # Step 1 = board-1.png (fewest tiles), last step = board-{total}.png (most tiles)
-    image_filename = f"generated/board-{requested}.png"
+    image_filename = f"generated/{session_id}/board-{requested}.png"
 
-    return render_template("steps.html", image=image_filename, step=requested, total=total)
+    return render_template("steps.html",
+                           image=image_filename,
+                           step=requested,
+                           total=total,
+                           session_id=session_id)
 
 @app.route("/googlea921428778131bd1.html")
 def google_verify():
@@ -422,6 +462,16 @@ def sitemap():
 </url>
 </urlset>'''
     return Response(xml, mimetype='application/xml')
+
+@app.route("/delete_session", methods=["POST"])
+def delete_session():
+    session_id = request.json.get("session_id", "")
+    # Sanitize: only allow UUID-shaped strings (hex + dashes, 36 chars)
+    if session_id and re.fullmatch(r"[0-9a-f\-]{36}", session_id):
+        folder = os.path.join(EXPORT_FOLDER, session_id)
+        if os.path.isdir(folder):
+            shutil.rmtree(folder, ignore_errors=True)
+    return jsonify({"ok": True})
 
 # -----------------------------
 # RUN APP
