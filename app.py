@@ -4,8 +4,10 @@ import re
 from collections import defaultdict
 from PIL import Image, ImageDraw
 import os
+import threading
 
 app = Flask(__name__)
+generation_lock = threading.Lock()
 
 # -----------------------------
 # Parameters
@@ -363,9 +365,16 @@ def home():
 
 @app.route("/result")
 def result():
+    acquired = generation_lock.acquire(blocking=False)
+    if not acquired:
+        return render_template("busy.html"), 503
 
-    place_tiles_pairwise(save_intermediates=True, intermediate_folder=EXPORT_FOLDER)
-    visualize_grid(grid, save_path=EXPORT_FILE)
+    try:
+        place_tiles_pairwise(save_intermediates=True, intermediate_folder=EXPORT_FOLDER)
+        visualize_grid(grid, save_path=EXPORT_FILE)
+    finally:
+        generation_lock.release()
+
     return render_template("result.html", image="generated/board.png")
 
 @app.route("/steps")
